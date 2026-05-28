@@ -94,5 +94,5 @@ DWG_PATH=/path/to/test.dwg QUERY=配电柜 bash skill/openclaw-cad/scripts/platf
 ## 8. 已知限制
 
 - 无 COM / Win32 自动化
-- ZwCAD 插件需在 Linux + 中望 SDK 环境构建
+- ZwCAD 插件需在 Linux + 中望 SDK 环境构建；2026 几何 API 差异见 `ZwCadGeometryCompat.cs`
 - 银河麒麟 RedHat 系需单独 SDK 包（首期 Debian x86_64）

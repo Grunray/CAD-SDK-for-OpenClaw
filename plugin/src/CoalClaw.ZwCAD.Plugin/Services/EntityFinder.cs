@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using CoalClaw.Cad.Abstractions.Models;
+using CoalClaw.ZwCAD.Plugin.Infrastructure;
 using ZwSoft.ZwCAD.DatabaseServices;
 using ZwSoft.ZwCAD.Geometry;
 
@@ -24,7 +25,7 @@ public static class EntityFinder
         var blockTable = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
         var modelSpace = (BlockTableRecord)tr.GetObject(blockTable[BlockTableRecord.ModelSpace], OpenMode.ForRead);
 
-        SearchBlockTableRecord(tr, modelSpace, query, exact, layerFilter, matches, Matrix3d.Identity);
+        SearchBlockTableRecord(tr, modelSpace, query, exact, layerFilter, matches, ZwCadGeometryCompat.IdentityMatrix);
         return matches;
     }
 
@@ -183,7 +184,7 @@ public static class EntityFinder
         }
         catch
         {
-            return Point3d.Origin.TransformBy(transform);
+            return ZwCadGeometryCompat.OriginPoint.TransformBy(transform);
         }
     }
 }
