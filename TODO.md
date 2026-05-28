@@ -15,9 +15,9 @@
 
 ---
 
-## Linux — 中望 CAD Linux 2025 (UOS/麒麟 x86_64)
+## Linux — 中望 CAD Linux 2026 (UOS/麒麟 x86_64)
 
-- [ ] 安装中望 CAD Linux 2025 + .NET 6 SDK
+- [ ] 安装中望 CAD Linux 2026 + .NET 6 SDK
 - [ ] `plugin/scripts/find-zwcad.sh --write-props && dotnet build src/CoalClaw.ZwCAD.Plugin`
 - [ ] `bash skill/openclaw-cad/scripts/ensure_cad_ready.sh --dwg-path test.dwg`
 - [ ] `bash skill/openclaw-cad/scripts/platforms/linux-zwcad/verify_e2e.sh`

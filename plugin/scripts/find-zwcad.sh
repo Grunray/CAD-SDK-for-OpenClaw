@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 探测中望 CAD Linux 2025 安装目录，可选写入 Directory.Build.props.user
+# 探测中望 CAD Linux 2026 安装目录，可选写入 Directory.Build.props.user
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

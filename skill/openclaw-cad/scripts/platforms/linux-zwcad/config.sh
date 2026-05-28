@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 中望 CAD Linux 2025 路径配置
+# 中望 CAD Linux 2026 路径配置
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -16,7 +16,7 @@ public sealed class ZwCadHostContext : ICadHostContext
     public CadHostMetadata Metadata { get; } = new(
         HostId: "zwcad",
         Platform: "linux",
-        HostVersion: "ZWCAD Linux 2025",
+        HostVersion: "ZWCAD Linux 2026",
         ApiThreadingVersion: ApiThreadingVersion,
         Port: DefaultPort);
 

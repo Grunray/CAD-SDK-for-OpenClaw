@@ -23,7 +23,7 @@
 
 `autocadVersion` 保留用于向后兼容；新客户端请读 `hostVersion`。
 
-Linux 中望示例：`host: "zwcad"`, `platform: "linux"`。
+Linux 中望示例：`host: "zwcad"`, `platform: "linux"`, `hostVersion: "ZWCAD Linux 2026"`。
 
 ## GET /health
 

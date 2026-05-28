@@ -6,7 +6,7 @@
   <PropertyGroup>
     <!-- 可被 Directory.Build.props.user 或环境变量 AcadInstallDir 覆盖 -->
     <AcadInstallDir Condition="'$(AcadInstallDir)' == ''">C:\Program Files\Autodesk\AutoCAD 2025\</AcadInstallDir>
-    <!-- 中望 CAD Linux 2025 安装目录（可被 ZwCadInstallDir 环境变量覆盖） -->
+    <!-- 中望 CAD Linux 2026 安装目录（可被 ZwCadInstallDir 环境变量覆盖） -->
     <ZwCadInstallDir Condition="'$(ZwCadInstallDir)' == ''">/opt/ZWCAD/</ZwCadInstallDir>
   </PropertyGroup>
 </Project>

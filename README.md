@@ -5,7 +5,7 @@
 | 平台 | CAD 宿主 | Skill |
 |------|----------|-------|
 | Windows | AutoCAD 2025 | `skill/openclaw-cad/` |
-| Linux (UOS/麒麟 x86_64) | 中望 CAD Linux 2025 | `skill/openclaw-cad/` |
+| Linux (UOS/麒麟 x86_64) | 中望 CAD Linux 2026 | `skill/openclaw-cad/` |
 
 ## 1. 项目目标
 

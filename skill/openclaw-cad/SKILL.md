@@ -1,6 +1,6 @@
 ---
 name: openclaw-cad
-description: 跨平台 CAD 自动化——Windows 用 AutoCAD 2025，Linux 用中望 CAD Linux 2025。统一 HTTP API：开图、按名称定位图元、缩放视图。优先 ensure_cad_ready。
+description: 跨平台 CAD 自动化——Windows 用 AutoCAD 2025，Linux 用中望 CAD Linux 2026。统一 HTTP API：开图、按名称定位图元、缩放视图。优先 ensure_cad_ready。
 ---
 
 # openclaw-cad
@@ -10,7 +10,7 @@ description: 跨平台 CAD 自动化——Windows 用 AutoCAD 2025，Linux 用�
 | 平台 | CAD 宿主 | 拉起脚本 |
 |------|----------|----------|
 | Windows | AutoCAD 2025 | `ensure_cad_ready.ps1` |
-| Linux (UOS/麒麟 x86_64) | 中望 CAD Linux 2025 | `ensure_cad_ready.sh` |
+| Linux (UOS/麒麟 x86_64) | 中望 CAD Linux 2026 | `ensure_cad_ready.sh` |
 
 ## Agent 标准流程（必读）
 

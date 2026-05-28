@@ -1,6 +1,6 @@
-# Linux — 中望 CAD Linux 2025 插件开发与联调
+# Linux — 中望 CAD Linux 2026 插件开发与联调
 
-目标环境：**中望 CAD Linux 2025** + **UOS / 银河麒麟** + **x86_64**（Debian 系 SDK）。
+目标环境：**中望 CAD Linux 2026** + **UOS / 银河麒麟** + **x86_64**（Debian 系 SDK）。
 
 Windows AutoCAD 见 [setup-windows.md](setup-windows.md)。HTTP 契约见 [api-contract.md](api-contract.md)。
 
@@ -9,11 +9,11 @@ Windows AutoCAD 见 [setup-windows.md](setup-windows.md)。HTTP 契约见 [api-c
 | 项 | 要求 |
 |---|---|
 | OS | UOS 或银河麒麟桌面版（x86_64） |
-| CAD | 中望 CAD Linux 2025 |
-| .NET SDK | 6.0+（与 ZwCAD .NET 插件 TFM 一致） |
+| CAD | 中望 CAD Linux 2026 |
+| .NET SDK | 6.0+（与 ZwCAD .NET 插件 TFM 一致，以 SDK 文档为准） |
 | 工具 | bash, curl |
 
-从中望官网下载 **ZRXSDK 2025 For Debian(x86_64)** 及 .NET 开发文档：  
+从中望官网下载 **ZRXSDK 2026 For Debian(x86_64)** 及 .NET 开发文档：  
 https://www.zwsoft.cn/support/zwcad-devdoc
 
 ## 2. 配置构建环境
@@ -71,7 +71,19 @@ chmod +x skill/openclaw-cad/scripts/platforms/linux-zwcad/verify_e2e.sh
 DWG_PATH=/path/to/test.dwg QUERY=配电柜 bash skill/openclaw-cad/scripts/platforms/linux-zwcad/verify_e2e.sh
 ```
 
-## 6. 环境变量
+## 6. `/ping` 验收字段
+
+```json
+{
+  "ok": true,
+  "host": "zwcad",
+  "platform": "linux",
+  "apiVersion": "1",
+  "hostVersion": "ZWCAD Linux 2026"
+}
+```
+
+## 7. 环境变量
 
 | 变量 | 说明 |
 |------|------|
@@ -79,7 +91,7 @@ DWG_PATH=/path/to/test.dwg QUERY=配电柜 bash skill/openclaw-cad/scripts/platf
 | `COALCLAW_PLUGIN_DLL` | ZwCAD 插件 DLL |
 | `ZwCadInstallDir` | 构建时 ZwDatabaseMgd.dll 所在目录 |
 
-## 7. 已知限制
+## 8. 已知限制
 
 - 无 COM / Win32 自动化
 - ZwCAD 插件需在 Linux + 中望 SDK 环境构建
