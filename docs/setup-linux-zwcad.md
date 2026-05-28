@@ -10,7 +10,7 @@ Windows AutoCAD 见 [setup-windows.md](setup-windows.md)。HTTP 契约见 [api-c
 |---|---|
 | OS | UOS 或银河麒麟桌面版（x86_64） |
 | CAD | 中望 CAD Linux 2026 |
-| .NET SDK | 6.0+（与 ZwCAD .NET 插件 TFM 一致，以 SDK 文档为准） |
+| .NET SDK | 8.0+（与中望 CAD 2026 互操作 DLL 一致） |
 | 工具 | bash, curl |
 
 从中望官网下载 **ZRXSDK 2026 For Debian(x86_64)** 及 .NET 开发文档：  
@@ -34,7 +34,7 @@ export ZwCadInstallDir=/opt/ZWCAD/
 dotnet build src/CoalClaw.ZwCAD.Plugin/CoalClaw.ZwCAD.Plugin.csproj
 ```
 
-输出：`plugin/src/CoalClaw.ZwCAD.Plugin/bin/Debug/net6.0/CoalClaw.ZwCAD.Plugin.dll`
+输出：`plugin/src/CoalClaw.ZwCAD.Plugin/bin/Debug/net8.0/CoalClaw.ZwCAD.Plugin.dll`
 
 ## 3. 加载插件
 
