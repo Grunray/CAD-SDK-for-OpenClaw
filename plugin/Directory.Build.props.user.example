@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- 复制为 Directory.Build.props.user 并改成你的 AutoCAD 安装目录 -->
+  <PropertyGroup>
+    <AcadInstallDir>D:\Program Files\Autodesk\AutoCAD 2025\</AcadInstallDir>
+    <!-- Linux 中望 CAD（仅在 Linux 构建 ZwCAD 插件时使用） -->
+    <ZwCadInstallDir>/opt/ZWCAD/</ZwCadInstallDir>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>CoalClaw.AutoCAD.Plugin</RootNamespace>
+    <AssemblyName>CoalClaw.AutoCAD.Plugin</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CoalClaw.Cad.Abstractions\CoalClaw.Cad.Abstractions.csproj" />
+    <ProjectReference Include="..\CoalClaw.Cad.Core\CoalClaw.Cad.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="accoremgd">
+      <HintPath>$(AcadInstallDir)accoremgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="acdbmgd">
+      <HintPath>$(AcadInstallDir)acdbmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="acmgd">
+      <HintPath>$(AcadInstallDir)acmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="GenerateLoadScript" AfterTargets="Build">
+    <PropertyGroup>
+      <_LoadScrLine>(command "._NETLOAD" "$([System.String]::Copy('$(TargetPath)').Replace('\','/'))")</_LoadScrLine>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(MSBuildProjectDirectory)\..\..\load.dev.scr"
+      Lines="$(_LoadScrLine)"
+      Overwrite="true" />
+  </Target>
+
+</Project>

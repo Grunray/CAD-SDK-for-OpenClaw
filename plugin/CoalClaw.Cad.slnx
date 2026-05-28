@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CoalClaw.Cad.Abstractions/CoalClaw.Cad.Abstractions.csproj" />
+    <Project Path="src/CoalClaw.Cad.Core/CoalClaw.Cad.Core.csproj" />
+    <Project Path="src/CoalClaw.AutoCAD.Plugin/CoalClaw.AutoCAD.Plugin.csproj" />
+    <Project Path="src/CoalClaw.ZwCAD.Plugin/CoalClaw.ZwCAD.Plugin.csproj" />
+  </Folder>
+</Solution>

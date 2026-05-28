@@ -1,0 +1,12 @@
+<Project>
+  <!-- 本机覆盖：复制 Directory.Build.props.user.example → Directory.Build.props.user -->
+  <Import Project="Directory.Build.props.user"
+          Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.props.user')" />
+
+  <PropertyGroup>
+    <!-- 可被 Directory.Build.props.user 或环境变量 AcadInstallDir 覆盖 -->
+    <AcadInstallDir Condition="'$(AcadInstallDir)' == ''">C:\Program Files\Autodesk\AutoCAD 2025\</AcadInstallDir>
+    <!-- 中望 CAD Linux 2025 安装目录（可被 ZwCadInstallDir 环境变量覆盖） -->
+    <ZwCadInstallDir Condition="'$(ZwCadInstallDir)' == ''">/opt/ZWCAD/</ZwCadInstallDir>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,26 @@
+<Project>
+  <PropertyGroup>
+    <AcadInstallDir Condition="$(AcadInstallDir.EndsWith('\'))">$(AcadInstallDir)</AcadInstallDir>
+    <AcadInstallDir Condition="!$(AcadInstallDir.EndsWith('\'))">$(AcadInstallDir)\</AcadInstallDir>
+    <_AcadProbe1 Condition="'$(AcadInstallDir)' == '' OR !Exists('$(AcadInstallDir)acdbmgd.dll')">C:\Program Files\Autodesk\AutoCAD 2025\</_AcadProbe1>
+    <_AcadProbe2 Condition="'$(AcadInstallDir)' == '' OR !Exists('$(AcadInstallDir)acdbmgd.dll')">C:\Program Files\Autodesk\AutoCAD 2026\</_AcadProbe2>
+    <_AcadProbe3 Condition="'$(AcadInstallDir)' == '' OR !Exists('$(AcadInstallDir)acdbmgd.dll')">C:\Program Files\Autodesk\AutoCAD 2024\</_AcadProbe3>
+    <_AcadProbe4 Condition="'$(AcadInstallDir)' == '' OR !Exists('$(AcadInstallDir)acdbmgd.dll')">D:\Program Files\Autodesk\AutoCAD 2025\</_AcadProbe4>
+    <AcadInstallDir Condition="Exists('$(_AcadProbe1)acdbmgd.dll')">$(_AcadProbe1)</AcadInstallDir>
+    <AcadInstallDir Condition="Exists('$(_AcadProbe2)acdbmgd.dll')">$(_AcadProbe2)</AcadInstallDir>
+    <AcadInstallDir Condition="Exists('$(_AcadProbe3)acdbmgd.dll')">$(_AcadProbe3)</AcadInstallDir>
+    <AcadInstallDir Condition="Exists('$(_AcadProbe4)acdbmgd.dll')">$(_AcadProbe4)</AcadInstallDir>
+  </PropertyGroup>
+
+  <Target Name="_ValidateAcadManagedDlls" BeforeTargets="CoreCompile"
+          Condition="'$(MSBuildProjectName)' == 'CoalClaw.AutoCAD.Plugin'">
+    <Error Condition="!Exists('$(AcadInstallDir)acdbmgd.dll')"
+      Text="找不到 AutoCAD 互操作 DLL（acdbmgd.dll）。当前 AcadInstallDir=$(AcadInstallDir) — 请执行: cd plugin; .\scripts\find-acad.ps1 -WriteProps ; dotnet build" />
+  </Target>
+
+  <Target Name="_ValidateZwCadManagedDlls" BeforeTargets="CoreCompile"
+          Condition="'$(MSBuildProjectName)' == 'CoalClaw.ZwCAD.Plugin'">
+    <Error Condition="!Exists('$(ZwCadInstallDir)ZwDatabaseMgd.dll')"
+      Text="找不到中望 CAD 互操作 DLL（ZwDatabaseMgd.dll）。当前 ZwCadInstallDir=$(ZwCadInstallDir) — 请在中望 CAD Linux 机器上设置 ZwCadInstallDir 后 build，或仅构建 AutoCAD 项目。" />
+  </Target>
+</Project>

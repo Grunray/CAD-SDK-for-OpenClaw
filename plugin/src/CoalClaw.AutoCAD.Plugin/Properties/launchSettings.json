@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AutoCAD 2025": {
+      "commandName": "Executable",
+      "executablePath": "D:\\Program Files\\Autodesk\\AutoCAD 2025\\acad.exe",
+      "commandLineArgs": "/nologo /b \"$(ProjectDir)..\\..\\load.dev.scr\"",
+      "workingDirectory": "D:\\Program Files\\Autodesk\\AutoCAD 2025"
+    }
+  }
+}
