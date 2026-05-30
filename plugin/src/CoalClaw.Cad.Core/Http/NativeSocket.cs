@@ -74,7 +74,7 @@ internal static class NativeSocket
         var total = 0;
         while (total < count && Environment.TickCount < deadline)
         {
-            var n = Platform.recv(fd, buffer, offset + total, count - total, 0);
+            var n = Platform.Recv(fd, buffer, offset + total, count - total, 0);
             if (n > 0)
             {
                 total += n;
@@ -91,7 +91,8 @@ internal static class NativeSocket
         var sent = 0;
         while (sent < data.Length)
         {
-            var n = Platform.send(fd, data, sent, data.Length - sent, 0);
+            var chunkLen = data.Length - sent;
+            var n = Platform.Send(fd, data, sent, chunkLen, 0);
             if (n <= 0) throw new InvalidOperationException("send() failed.");
             sent += n;
         }
@@ -148,11 +149,29 @@ internal static class NativeSocket
         public static int setsockopt(int s, int level, int optname, ref int optval, int optlen) =>
             OperatingSystem.IsWindows() ? Win.setsockopt(s, level, optname, ref optval, optlen) : Lin.setsockopt(s, level, optname, ref optval, optlen);
 
-        public static int recv(int s, byte[] buf, int offset, int len, int flags) =>
-            OperatingSystem.IsWindows() ? Win.recv(s, buf, offset, len, flags) : Lin.recv(s, buf, offset, len, flags);
+        public static int Recv(int s, byte[] buf, int offset, int len, int flags)
+        {
+            if (len <= 0) return 0;
+            if (offset == 0)
+                return OperatingSystem.IsWindows() ? Win.recv(s, buf, len, flags) : Lin.recv(s, buf, len, flags);
 
-        public static int send(int s, byte[] buf, int offset, int len, int flags) =>
-            OperatingSystem.IsWindows() ? Win.send(s, buf, offset, len, flags) : Lin.send(s, buf, offset, len, flags);
+            var temp = new byte[len];
+            var n = OperatingSystem.IsWindows() ? Win.recv(s, temp, len, flags) : Lin.recv(s, temp, len, flags);
+            if (n > 0)
+                Buffer.BlockCopy(temp, 0, buf, offset, n);
+            return n;
+        }
+
+        public static int Send(int s, byte[] buf, int offset, int len, int flags)
+        {
+            if (len <= 0) return 0;
+            if (offset == 0)
+                return OperatingSystem.IsWindows() ? Win.send(s, buf, len, flags) : Lin.send(s, buf, len, flags);
+
+            var slice = new byte[len];
+            Buffer.BlockCopy(buf, offset, slice, 0, len);
+            return OperatingSystem.IsWindows() ? Win.send(s, slice, len, flags) : Lin.send(s, slice, len, flags);
+        }
 
         public static int close(int s) =>
             OperatingSystem.IsWindows() ? Win.close(s) : Lin.close(s);
@@ -177,8 +196,8 @@ internal static class NativeSocket
         [DllImport("ws2_32.dll", SetLastError = true)] public static extern int listen(int s, int backlog);
         [DllImport("ws2_32.dll", SetLastError = true)] public static extern int accept(int s, IntPtr addr, IntPtr addrlen);
         [DllImport("ws2_32.dll", SetLastError = true)] public static extern int setsockopt(int s, int level, int optname, ref int optval, int optlen);
-        [DllImport("ws2_32.dll", SetLastError = true)] public static extern int recv(int s, byte[] buf, int offset, int len, int flags);
-        [DllImport("ws2_32.dll", SetLastError = true)] public static extern int send(int s, byte[] buf, int offset, int len, int flags);
+        [DllImport("ws2_32.dll", SetLastError = true)] public static extern int recv(int s, byte[] buf, int len, int flags);
+        [DllImport("ws2_32.dll", SetLastError = true)] public static extern int send(int s, byte[] buf, int len, int flags);
         [DllImport("ws2_32.dll", SetLastError = true)] public static extern int close(int s);
     }
 
@@ -191,8 +210,8 @@ internal static class NativeSocket
         [DllImport(Libc, SetLastError = true)] public static extern int listen(int s, int backlog);
         [DllImport(Libc, SetLastError = true)] public static extern int accept(int s, IntPtr addr, IntPtr addrlen);
         [DllImport(Libc, SetLastError = true)] public static extern int setsockopt(int s, int level, int optname, ref int optval, int optlen);
-        [DllImport(Libc, SetLastError = true)] public static extern int recv(int s, byte[] buf, int offset, int len, int flags);
-        [DllImport(Libc, SetLastError = true)] public static extern int send(int s, byte[] buf, int offset, int len, int flags);
+        [DllImport(Libc, SetLastError = true)] public static extern int recv(int s, byte[] buf, int len, int flags);
+        [DllImport(Libc, SetLastError = true)] public static extern int send(int s, byte[] buf, int len, int flags);
         [DllImport(Libc, SetLastError = true)] public static extern int close(int s);
     }
 }
