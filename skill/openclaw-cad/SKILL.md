@@ -82,7 +82,7 @@ bash scripts/zoom_to.sh --handle "A3F"
 ## Linux 专项
 
 - 仅 bash + curl，**禁止**声称已执行 Win32/COM 步骤
-- 构建插件：在中望 CAD Linux 机器上 `plugin/scripts/find-zwcad.sh -WriteProps && dotnet build src/CoalClaw.ZwCAD.Plugin`
+- 构建插件：在中望 CAD Linux 机器上 `plugin/scripts/find-zwcad.sh -WriteProps && dotnet build src/CoalClaw.ZwCAD.Plugin`（输出 `CoalClawZwCADPlugin.dll`）
 - 自动加载：见 [docs/setup-linux-zwcad.md](../../docs/setup-linux-zwcad.md)
 - 平台脚本目录：`scripts/platforms/linux-zwcad/`
 

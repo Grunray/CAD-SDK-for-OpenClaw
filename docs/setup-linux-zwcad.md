@@ -34,7 +34,9 @@ export ZwCadInstallDir=/opt/ZWCAD/
 dotnet build src/CoalClaw.ZwCAD.Plugin/CoalClaw.ZwCAD.Plugin.csproj
 ```
 
-输出：`plugin/src/CoalClaw.ZwCAD.Plugin/bin/Debug/net8.0/CoalClaw.ZwCAD.Plugin.dll`
+输出：`plugin/src/CoalClaw.ZwCAD.Plugin/bin/Debug/net8.0/CoalClawZwCADPlugin.dll`
+
+> **NETLOAD 注意：** 输出 DLL 名必须为 `CoalClawZwCADPlugin.dll`，不能与命名空间 `CoalClaw.ZwCAD.Plugin` 同名，否则中望 CAD 2026 类型解析失败。
 
 ## 3. 加载插件
 
@@ -42,7 +44,7 @@ dotnet build src/CoalClaw.ZwCAD.Plugin/CoalClaw.ZwCAD.Plugin.csproj
 
 ```bash
 export COALCLAW_CAD_EXE=/opt/ZWCAD/zwcad
-export COALCLAW_PLUGIN_DLL=/path/to/CoalClaw.ZwCAD.Plugin.dll
+export COALCLAW_PLUGIN_DLL=/path/to/CoalClawZwCADPlugin.dll
 
 bash skill/openclaw-cad/scripts/platforms/linux-zwcad/start_zwcad_with_plugin.sh
 bash skill/openclaw-cad/scripts/platforms/linux-zwcad/wait_for_plugin.sh

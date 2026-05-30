@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>CoalClaw.ZwCAD.Plugin</RootNamespace>
-    <AssemblyName>CoalClaw.ZwCAD.Plugin</AssemblyName>
+    <!-- 程序集名不得与命名空间前缀相同，否则 ZWCAD NETLOAD 无法解析 ExtensionApplication -->
+    <AssemblyName>CoalClawZwCADPlugin</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PlatformTarget>x64</PlatformTarget>

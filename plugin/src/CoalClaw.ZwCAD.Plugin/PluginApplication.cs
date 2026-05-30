@@ -20,7 +20,7 @@ public sealed class PluginApplication : IExtensionApplication
         ZwCadUiContext.Initialize();
         _httpHost = new HttpServerHost(HostContext, DefaultPort);
         _httpHost.Start();
-        CadRuntimeWriter.Write("zwcad", "linux", DefaultPort, "CoalClaw.ZwCAD.Plugin.dll");
+        CadRuntimeWriter.Write("zwcad", "linux", DefaultPort, $"{typeof(PluginApplication).Assembly.GetName().Name}.dll");
         Application.DocumentManager.MdiActiveDocument?.Editor.WriteMessage(
             $"\n[CoalClaw] HTTP API started at http://127.0.0.1:{DefaultPort}\n");
     }
