@@ -1,20 +1,12 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Text.Json;
 using CoalClaw.Cad.Abstractions;
 using CoalClaw.Cad.Abstractions.Models;
+using CoalClaw.Cad.Core.Json;
 
 namespace CoalClaw.Cad.Core.Api;
 
 public sealed class ApiRouter
 {
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
-    };
-
     private readonly ICadHostContext _host;
 
     public ApiRouter(ICadHostContext host)
@@ -22,12 +14,12 @@ public sealed class ApiRouter
         _host = host;
     }
 
-    public (int Status, object? Body) Route(string method, string path, IReadOnlyDictionary<string, string> query, string body)
+    public (int Status, string Body) Route(string method, string path, IReadOnlyDictionary<string, string> query, string body)
     {
         try
         {
             if (path == "/ping" && method == "GET")
-                return Ping();
+                return (200, SimpleJson.Ping(_host.Metadata));
 
             if (path == "/health" && method == "GET")
                 return Health();
@@ -55,7 +47,7 @@ public sealed class ApiRouter
             if (path == "/zoom/by" && (method == "GET" || method == "POST"))
             {
                 if (!double.TryParse(query.GetValueOrDefault("factor") ?? "1", NumberStyles.Any, CultureInfo.InvariantCulture, out var factor))
-                    return (400, new { error = "Invalid 'factor' parameter." });
+                    return (400, SimpleJson.Err("Invalid 'factor' parameter."));
 
                 double? cx = null, cy = null;
                 if (double.TryParse(query.GetValueOrDefault("centerx"), NumberStyles.Any, CultureInfo.InvariantCulture, out var cxVal)) cx = cxVal;
@@ -67,192 +59,167 @@ public sealed class ApiRouter
             if (path == "/zoom/window" && method == "POST")
             {
                 if (string.IsNullOrWhiteSpace(body))
-                    return (400, new { error = "Request body is required for /zoom/window." });
+                    return (400, SimpleJson.Err("Request body is required for /zoom/window."));
 
-                var win = JsonSerializer.Deserialize<ZoomWindowBody>(body, JsonOpts);
-                if (win?.Min == null || win?.Max == null)
-                    return (400, new { error = "Body must contain 'min' and 'max' with x,y properties." });
+                if (!TryParseZoomWindow(body, out var minX, out var minY, out var maxX, out var maxY))
+                    return (400, SimpleJson.Err("Body must contain 'min' and 'max' with x,y properties."));
 
-                return ZoomWindow(win.Min, win.Max);
+                return ZoomWindow(minX, minY, maxX, maxY);
             }
         }
         catch (Exception ex)
         {
-            return (500, new { error = ex.Message });
+            return (500, SimpleJson.Err(ex.Message));
         }
 
-        return (404, new { error = "Not found" });
+        return (404, SimpleJson.Err("Not found"));
     }
 
-    private (int Status, object? Body) Ping()
-    {
-        var meta = _host.Metadata;
-        return (200, new
-        {
-            ok = true,
-            host = meta.HostId,
-            platform = meta.Platform,
-            apiVersion = meta.ApiVersion,
-            hostVersion = meta.HostVersion,
-            port = meta.Port,
-            threading = meta.ApiThreadingVersion,
-            autocadVersion = meta.HostVersion
-        });
-    }
-
-    private (int Status, object? Body) Health()
+    private (int Status, string Body) Health()
     {
         if (!_host.TryGetDocumentInfo(out var name, out var error))
-        {
-            return (200, new { ok = false, hasActiveDocument = false, documentName = (string?)null, error });
-        }
+            return (200, SimpleJson.Health(false, false, null, error));
 
-        return (200, new { ok = true, hasActiveDocument = true, documentName = name, error = (string?)null });
+        return (200, SimpleJson.Health(true, true, name, null));
     }
 
-    private (int Status, object? Body) OpenDocument(string body)
+    private (int Status, string Body) OpenDocument(string body)
     {
         if (string.IsNullOrWhiteSpace(body))
-            return (400, new { error = "Request body is required for /document/open." });
+            return (400, SimpleJson.Err("Request body is required for /document/open."));
 
-        OpenDocumentRequest? req;
-        try
-        {
-            req = JsonSerializer.Deserialize<OpenDocumentRequest>(body, JsonOpts);
-        }
-        catch
-        {
-            return (400, new { error = "Invalid JSON body." });
-        }
-
-        if (string.IsNullOrWhiteSpace(req?.Path))
-            return (400, new { error = "Field 'path' is required." });
+        var path = SimpleJson.ExtractString(body, "path");
+        if (string.IsNullOrWhiteSpace(path))
+            return (400, SimpleJson.Err("Field 'path' is required."));
 
         try
         {
-            var result = _host.OpenDocument(req.Path);
+            var result = _host.OpenDocument(path);
             if (!result.Ok)
-                return (400, new { ok = false, error = result.Error ?? "Failed to open document." });
+                return (400, SimpleJson.ErrObj(result.Error ?? "Failed to open document."));
 
-            return (200, new { ok = true, documentName = result.DocumentName });
+            return (200, SimpleJson.OpenOk(result.DocumentName ?? path));
         }
         catch (InvalidOperationException ex)
         {
-            return (400, new { ok = false, error = ex.Message });
+            return (400, SimpleJson.ErrObj(ex.Message));
         }
         catch (TimeoutException ex)
         {
-            return (504, new { ok = false, error = ex.Message });
+            return (504, SimpleJson.ErrObj(ex.Message));
         }
     }
 
-    private (int Status, object? Body) FindEntity(string query, bool exact, string? layer)
+    private (int Status, string Body) FindEntity(string query, bool exact, string? layer)
     {
         if (string.IsNullOrWhiteSpace(query))
-            return (400, new { error = "Query parameter 'q' is required." });
+            return (400, SimpleJson.Err("Query parameter 'q' is required."));
 
         try
         {
             var matches = _host.FindEntities(query, exact, layer);
-            return (200, new { matches, count = matches.Count });
+            return (200, SimpleJson.Find(matches));
         }
         catch (InvalidOperationException ex)
         {
-            return (400, new { error = ex.Message });
+            return (400, SimpleJson.Err(ex.Message));
         }
         catch (ArgumentException ex)
         {
-            return (400, new { error = ex.Message });
+            return (400, SimpleJson.Err(ex.Message));
         }
         catch (TimeoutException ex)
         {
-            return (504, new { error = ex.Message });
+            return (504, SimpleJson.Err(ex.Message));
         }
     }
 
-    private (int Status, object? Body) ZoomTo(string handle)
+    private (int Status, string Body) ZoomTo(string handle)
     {
         if (string.IsNullOrWhiteSpace(handle))
-            return (400, new { error = "Handle parameter is required." });
+            return (400, SimpleJson.Err("Handle parameter is required."));
 
         try
         {
-            return (200, _host.ZoomToHandle(handle));
+            return (200, SimpleJson.Zoom(_host.ZoomToHandle(handle)));
         }
         catch (KeyNotFoundException ex)
         {
-            return (404, new { ok = false, error = ex.Message });
+            return (404, SimpleJson.ErrObj(ex.Message));
         }
         catch (InvalidOperationException ex)
         {
-            return (400, new { ok = false, error = ex.Message });
+            return (400, SimpleJson.ErrObj(ex.Message));
         }
         catch (TimeoutException ex)
         {
-            return (504, new { ok = false, error = ex.Message });
+            return (504, SimpleJson.ErrObj(ex.Message));
         }
     }
 
-    private (int Status, object? Body) ZoomExtents()
+    private (int Status, string Body) ZoomExtents()
     {
         try
         {
-            return (200, _host.ZoomExtents());
+            return (200, SimpleJson.Zoom(_host.ZoomExtents()));
         }
         catch (InvalidOperationException ex)
         {
-            return (400, new { ok = false, error = ex.Message });
+            return (400, SimpleJson.ErrObj(ex.Message));
         }
         catch (TimeoutException ex)
         {
-            return (504, new { ok = false, error = ex.Message });
+            return (504, SimpleJson.ErrObj(ex.Message));
         }
     }
 
-    private (int Status, object? Body) ZoomBy(double factor, double? centerX, double? centerY)
+    private (int Status, string Body) ZoomBy(double factor, double? centerX, double? centerY)
     {
         try
         {
-            return (200, _host.ZoomBy(factor, centerX, centerY));
+            return (200, SimpleJson.Zoom(_host.ZoomBy(factor, centerX, centerY)));
         }
         catch (ArgumentOutOfRangeException ex)
         {
-            return (400, new { ok = false, error = ex.Message });
+            return (400, SimpleJson.ErrObj(ex.Message));
         }
         catch (InvalidOperationException ex)
         {
-            return (400, new { ok = false, error = ex.Message });
+            return (400, SimpleJson.ErrObj(ex.Message));
         }
         catch (TimeoutException ex)
         {
-            return (504, new { ok = false, error = ex.Message });
+            return (504, SimpleJson.ErrObj(ex.Message));
         }
     }
 
-    private (int Status, object? Body) ZoomWindow(Point2Dto min, Point2Dto max)
+    private (int Status, string Body) ZoomWindow(double minX, double minY, double maxX, double maxY)
     {
         try
         {
-            return (200, _host.ZoomWindow(min.X, min.Y, max.X, max.Y));
+            return (200, SimpleJson.Zoom(_host.ZoomWindow(minX, minY, maxX, maxY)));
         }
         catch (InvalidOperationException ex)
         {
-            return (400, new { ok = false, error = ex.Message });
+            return (400, SimpleJson.ErrObj(ex.Message));
         }
         catch (TimeoutException ex)
         {
-            return (504, new { ok = false, error = ex.Message });
+            return (504, SimpleJson.ErrObj(ex.Message));
         }
     }
 
-    private sealed class OpenDocumentRequest
+    private static bool TryParseZoomWindow(string body, out double minX, out double minY, out double maxX, out double maxY)
     {
-        public string? Path { get; set; }
-    }
+        minX = minY = maxX = maxY = 0;
+        var minIdx = body.IndexOf("\"min\"", StringComparison.OrdinalIgnoreCase);
+        var maxIdx = body.IndexOf("\"max\"", StringComparison.OrdinalIgnoreCase);
+        if (minIdx < 0 || maxIdx < 0) return false;
 
-    private sealed class ZoomWindowBody
-    {
-        public Point2Dto? Min { get; set; }
-        public Point2Dto? Max { get; set; }
+        if (!SimpleJson.TryExtractDouble(body.Substring(minIdx, Math.Min(120, body.Length - minIdx)), "x", out minX)) return false;
+        if (!SimpleJson.TryExtractDouble(body.Substring(minIdx, Math.Min(120, body.Length - minIdx)), "y", out minY)) return false;
+        if (!SimpleJson.TryExtractDouble(body.Substring(maxIdx, Math.Min(120, body.Length - maxIdx)), "x", out maxX)) return false;
+        if (!SimpleJson.TryExtractDouble(body.Substring(maxIdx, Math.Min(120, body.Length - maxIdx)), "y", out maxY)) return false;
+        return true;
     }
 }

@@ -38,6 +38,10 @@ dotnet build src/CoalClaw.ZwCAD.Plugin/CoalClaw.ZwCAD.Plugin.csproj
 
 > **NETLOAD 注意：** 输出 DLL 名必须为 `CoalClawZwCADPlugin.dll`，不能与命名空间 `CoalClaw.ZwCAD.Plugin` 同名，否则中望 CAD 2026 类型解析失败。
 
+> **单文件插件：** ZwCAD 项目将 Abstractions + Core 源码合并进同一 DLL（无 `CoalClaw.Cad.Core.dll` 依赖），因 ZWCAD 的 `AssemblyLoadContext` 无法加载额外程序集。
+
+> **无 System.Text.Json / System.Net.Sockets：** HTTP 层使用 P/Invoke `socket` + 手工 JSON，与 OpenClaw 验证方案一致。
+
 ## 3. 加载插件
 
 ### 方式 A — 启动脚本（推荐联调）

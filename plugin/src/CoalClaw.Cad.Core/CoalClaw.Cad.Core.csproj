@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>CoalClaw.Cad.Core</RootNamespace>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
@@ -11,8 +12,6 @@
     <ProjectReference Include="..\CoalClaw.Cad.Abstractions\CoalClaw.Cad.Abstractions.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
-  </ItemGroup>
+  <!-- 不引用 System.Text.Json / System.Net.Sockets，兼容 ZWCAD 受限 AssemblyLoadContext -->
 
 </Project>

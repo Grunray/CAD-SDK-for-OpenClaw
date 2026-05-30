@@ -10,12 +10,26 @@
     <PlatformTarget>x64</PlatformTarget>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <!-- 单 DLL：ZWCAD 无法加载额外依赖程序集 -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CoalClaw.Cad.Abstractions\CoalClaw.Cad.Abstractions.csproj" />
-    <ProjectReference Include="..\CoalClaw.Cad.Core\CoalClaw.Cad.Core.csproj" />
+    <Compile Include="PluginApplication.cs" />
+    <Compile Include="Infrastructure\ZwCadHostContext.cs" />
+    <Compile Include="Infrastructure\ZwCadUiContext.cs" />
+    <Compile Include="Infrastructure\ZwCadGeometryCompat.cs" />
+    <Compile Include="Services\EntityFinder.cs" />
+    <Compile Include="Services\ViewZoomService.cs" />
+    <Compile Include="..\CoalClaw.Cad.Abstractions\ICadHostContext.cs" Link="Abstractions\ICadHostContext.cs" />
+    <Compile Include="..\CoalClaw.Cad.Abstractions\Models\ApiModels.cs" Link="Abstractions\Models\ApiModels.cs" />
+    <Compile Include="..\CoalClaw.Cad.Abstractions\Models\CadHostMetadata.cs" Link="Abstractions\Models\CadHostMetadata.cs" />
+    <Compile Include="..\CoalClaw.Cad.Core\Api\ApiRouter.cs" Link="Core\Api\ApiRouter.cs" />
+    <Compile Include="..\CoalClaw.Cad.Core\Http\HttpServerHost.cs" Link="Core\Http\HttpServerHost.cs" />
+    <Compile Include="..\CoalClaw.Cad.Core\Http\NativeSocket.cs" Link="Core\Http\NativeSocket.cs" />
+    <Compile Include="..\CoalClaw.Cad.Core\Json\SimpleJson.cs" Link="Core\Json\SimpleJson.cs" />
+    <Compile Include="..\CoalClaw.Cad.Core\Runtime\CadRuntimeWriter.cs" Link="Core\Runtime\CadRuntimeWriter.cs" />
+    <Compile Include="..\CoalClaw.Cad.Core\Services\ZoomCommandBuilder.cs" Link="Core\Services\ZoomCommandBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup>

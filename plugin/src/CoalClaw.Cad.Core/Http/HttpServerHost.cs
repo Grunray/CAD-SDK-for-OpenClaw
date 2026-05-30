@@ -1,12 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
 using System.Text;
-using System.Text.Json;
-using System.Threading;
 using CoalClaw.Cad.Abstractions;
 using CoalClaw.Cad.Core.Api;
 
@@ -17,15 +9,9 @@ public sealed class HttpServerHost : IDisposable
     private readonly ICadHostContext _host;
     private readonly ApiRouter _router;
     private readonly int _port;
-    private TcpListener? _listener;
+    private int _listenFd = -1;
     private Thread? _serverThread;
-    private CancellationTokenSource? _cts;
-
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
-    };
+    private volatile bool _stopRequested;
 
     public HttpServerHost(ICadHostContext host, int port)
     {
@@ -41,7 +27,7 @@ public sealed class HttpServerHost : IDisposable
         if (_serverThread != null)
             return;
 
-        _cts = new CancellationTokenSource();
+        _stopRequested = false;
         _serverThread = new Thread(ServerLoop)
         {
             IsBackground = true,
@@ -54,97 +40,84 @@ public sealed class HttpServerHost : IDisposable
     {
         try
         {
-            _listener = new TcpListener(IPAddress.Loopback, _port);
-            _listener.Start();
+            _listenFd = NativeSocket.CreateListenSocket(_port);
 
-            while (!_cts!.Token.IsCancellationRequested)
+            while (!_stopRequested)
             {
-                try
+                var clientFd = NativeSocket.Accept(_listenFd);
+                if (clientFd < 0)
                 {
-                    var client = _listener.AcceptTcpClient();
-                    ThreadPool.QueueUserWorkItem(HandleClient, client);
+                    if (_stopRequested) break;
+                    Thread.Sleep(50);
+                    continue;
                 }
-                catch (ObjectDisposedException) { break; }
+
+                var fd = clientFd;
+                var thread = new Thread(() => HandleClient(fd))
+                {
+                    IsBackground = true
+                };
+                thread.Start();
             }
         }
         catch (Exception ex)
         {
             _host.LogError($"HTTP server error: {ex.Message}");
         }
+        finally
+        {
+            if (_listenFd >= 0)
+            {
+                NativeSocket.Close(_listenFd);
+                _listenFd = -1;
+            }
+        }
     }
 
-    private void HandleClient(object? state)
+    private void HandleClient(int clientFd)
     {
-        var client = (TcpClient)state!;
         try
         {
-            using (client)
-            using (var stream = client.GetStream())
+            var buffer = new byte[8192];
+            var totalRead = NativeSocket.ReadAvailable(clientFd, buffer, 0, buffer.Length, 5000);
+            if (totalRead == 0) return;
+
+            var requestText = Encoding.ASCII.GetString(buffer, 0, totalRead);
+            var request = ParseRequest(requestText);
+            if (request == null) return;
+
+            var (status, responseBody) = _router.Route(
+                request.Method,
+                request.Path,
+                request.Query,
+                request.Body);
+
+            var statusText = status switch
             {
-                var buffer = new byte[8192];
-                var totalRead = 0;
-                var timeoutAt = Environment.TickCount + 5000;
+                200 => "OK",
+                400 => "Bad Request",
+                404 => "Not Found",
+                500 => "Internal Server Error",
+                504 => "Gateway Timeout",
+                _ => "Unknown"
+            };
 
-                while (totalRead < buffer.Length)
-                {
-                    var available = client.Available;
-                    if (available > 0)
-                    {
-                        var chunkSize = Math.Min(available, buffer.Length - totalRead);
-                        var read = stream.Read(buffer, totalRead, chunkSize);
-                        if (read == 0) break;
-                        totalRead += read;
+            var responseStr = $"HTTP/1.1 {status} {statusText}\r\n" +
+                              $"Content-Type: application/json; charset=utf-8\r\n" +
+                              $"Content-Length: {Encoding.UTF8.GetByteCount(responseBody)}\r\n" +
+                              $"Connection: close\r\n" +
+                              $"\r\n" +
+                              responseBody;
 
-                        var text = Encoding.ASCII.GetString(buffer, 0, totalRead);
-                        if (text.Contains("\r\n\r\n")) break;
-                    }
-                    else
-                    {
-                        if (Environment.TickCount > timeoutAt) break;
-                        Thread.Sleep(10);
-                    }
-                }
-
-                if (totalRead == 0) return;
-
-                var requestText = Encoding.ASCII.GetString(buffer, 0, totalRead);
-                var request = ParseRequest(requestText);
-                if (request == null) return;
-
-                var (status, body) = _router.Route(
-                    request.Method,
-                    request.Path,
-                    request.Query,
-                    request.Body);
-
-                var responseBody = body != null
-                    ? JsonSerializer.Serialize(body, JsonOpts)
-                    : "";
-                var statusText = status switch
-                {
-                    200 => "OK",
-                    400 => "Bad Request",
-                    404 => "Not Found",
-                    500 => "Internal Server Error",
-                    504 => "Gateway Timeout",
-                    _ => "Unknown"
-                };
-
-                var responseStr = $"HTTP/1.1 {status} {statusText}\r\n" +
-                                  $"Content-Type: application/json; charset=utf-8\r\n" +
-                                  $"Content-Length: {Encoding.UTF8.GetByteCount(responseBody)}\r\n" +
-                                  $"Connection: close\r\n" +
-                                  $"\r\n" +
-                                  responseBody;
-
-                var responseBytes = Encoding.UTF8.GetBytes(responseStr);
-                stream.Write(responseBytes, 0, responseBytes.Length);
-                stream.Flush();
-            }
+            NativeSocket.SendAll(clientFd, Encoding.UTF8.GetBytes(responseStr));
         }
         catch (Exception ex)
         {
             _host.LogError($"HandleClient error: {ex.Message}");
+        }
+        finally
+        {
+            NativeSocket.Close(clientFd);
         }
     }
 
@@ -179,8 +152,8 @@ public sealed class HttpServerHost : IDisposable
                 var eq = pair.IndexOf('=');
                 if (eq >= 0)
                 {
-                    var key = Uri.UnescapeDataString(pair[..eq]).ToLowerInvariant();
-                    var val = Uri.UnescapeDataString(pair[(eq + 1)..]);
+                    var key = NativeSocket.PercentDecode(pair[..eq]).ToLowerInvariant();
+                    var val = NativeSocket.PercentDecode(pair[(eq + 1)..]);
                     info.Query[key] = val;
                 }
             }
@@ -199,12 +172,11 @@ public sealed class HttpServerHost : IDisposable
 
     public void Stop()
     {
-        try { _cts?.Cancel(); } catch { }
-        try { _listener?.Stop(); } catch { }
-        _listener = null;
+        _stopRequested = true;
+        if (_listenFd >= 0)
+            NativeSocket.Close(_listenFd);
+        _listenFd = -1;
         _serverThread = null;
-        _cts?.Dispose();
-        _cts = null;
     }
 
     public void Dispose()
