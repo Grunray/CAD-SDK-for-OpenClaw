@@ -9,7 +9,7 @@ namespace CoalClaw.ZwCAD.Plugin.Infrastructure;
 
 public sealed class ZwCadHostContext : ICadHostContext
 {
-    public const string ApiThreadingVersion = "threadfix-v1";
+    public const string ApiThreadingVersion = "threadfix-v2";
     private const int DefaultPort = 54321;
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
@@ -27,14 +27,22 @@ public sealed class ZwCadHostContext : ICadHostContext
 
         try
         {
-            var db = HostApplicationServices.WorkingDatabase;
-            if (db == null)
+            var name = ZwCadUiContext.Run(() =>
+            {
+                var db = HostApplicationServices.WorkingDatabase;
+                if (db == null)
+                    return null;
+
+                return string.IsNullOrWhiteSpace(db.Filename) ? "(unsaved)" : db.Filename;
+            }, DefaultTimeout);
+
+            if (name == null)
             {
                 error = "No working database is available.";
                 return false;
             }
 
-            documentName = string.IsNullOrWhiteSpace(db.Filename) ? "(unsaved)" : db.Filename;
+            documentName = name;
             return true;
         }
         catch (Exception ex)
@@ -119,21 +127,26 @@ public sealed class ZwCadHostContext : ICadHostContext
 
     private static T RunInDatabase<T>(Func<Database, Transaction, T> action)
     {
-        var db = HostApplicationServices.WorkingDatabase
-                 ?? throw new InvalidOperationException("No working database.");
+        // Database 读取同样必须经 UI/应用上下文：HTTP 工作线程直接开 Transaction
+        // 会与用户正在进行的编辑/文档切换竞争（与 OpenDocument / RunZoomCommand 同一纪律）
+        return ZwCadUiContext.Run(() =>
+        {
+            var db = HostApplicationServices.WorkingDatabase
+                     ?? throw new InvalidOperationException("No working database.");
 
-        using var tr = db.TransactionManager.StartTransaction();
-        try
-        {
-            var result = action(db, tr);
-            tr.Commit();
-            return result;
-        }
-        catch
-        {
-            tr.Abort();
-            throw;
-        }
+            using var tr = db.TransactionManager.StartTransaction();
+            try
+            {
+                var result = action(db, tr);
+                tr.Commit();
+                return result;
+            }
+            catch
+            {
+                tr.Abort();
+                throw;
+            }
+        }, DefaultTimeout);
     }
 
     private static ZoomResponse RunZoomCommand(string command, Point3d? viewMin = null, Point3d? viewMax = null)
