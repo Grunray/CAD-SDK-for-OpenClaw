@@ -87,19 +87,19 @@ public static class EntityFinder
         switch (entity)
         {
             case AttributeReference attribute:
-                TryAddMatch(matches, entity, "attribute", attribute.TextString, attribute.Position.TransformBy(transform), query, exact);
+                TryAddMatch(matches, entity, "attribute", attribute.TextString, () => attribute.Position.TransformBy(transform), query, exact);
                 break;
 
             case DBText dbText:
-                TryAddMatch(matches, entity, "text", dbText.TextString, dbText.Position.TransformBy(transform), query, exact);
+                TryAddMatch(matches, entity, "text", dbText.TextString, () => dbText.Position.TransformBy(transform), query, exact);
                 break;
 
             case MText mText:
-                TryAddMatch(matches, entity, "text", GetPlainMText(mText), mText.Location.TransformBy(transform), query, exact);
+                TryAddMatch(matches, entity, "text", GetPlainMText(mText), () => mText.Location.TransformBy(transform), query, exact);
                 break;
 
             case BlockReference blockRef:
-                TryAddMatch(matches, entity, "blockName", blockRef.Name, GetEntityPosition(blockRef, transform), query, exact);
+                TryAddMatch(matches, entity, "blockName", blockRef.Name, () => GetEntityPosition(blockRef, transform), query, exact);
                 foreach (ObjectId attributeId in blockRef.AttributeCollection)
                 {
                     if (attributeId.IsNull)
@@ -109,19 +109,19 @@ public static class EntityFinder
                     if (attr == null)
                         continue;
 
-                    TryAddMatch(matches, attr, "attribute", attr.TextString, attr.Position.TransformBy(transform), query, exact);
+                    TryAddMatch(matches, attr, "attribute", attr.TextString, () => attr.Position.TransformBy(transform), query, exact);
                 }
                 break;
 
             case Dimension dimension:
                 var dimensionText = GetDimensionText(dimension);
-                TryAddMatch(matches, entity, "dimensionText", dimensionText, GetEntityPosition(dimension, transform), query, exact);
+                TryAddMatch(matches, entity, "dimensionText", dimensionText, () => GetEntityPosition(dimension, transform), query, exact);
                 var measurement = dimension.Measurement.ToString(CultureInfo.InvariantCulture);
-                TryAddMatch(matches, entity, "dimensionValue", measurement, GetEntityPosition(dimension, transform), query, exact);
+                TryAddMatch(matches, entity, "dimensionValue", measurement, () => GetEntityPosition(dimension, transform), query, exact);
                 break;
         }
 
-        TryAddMatch(matches, entity, "layer", entity.Layer, GetEntityPosition(entity, transform), query, exact);
+        TryAddMatch(matches, entity, "layer", entity.Layer, () => GetEntityPosition(entity, transform), query, exact);
     }
 
     private static void TryAddMatch(
@@ -129,7 +129,7 @@ public static class EntityFinder
         Entity entity,
         string matchedField,
         string? candidate,
-        Point3d position,
+        Func<Point3d> positionFactory,
         string query,
         bool exact)
     {
@@ -139,6 +139,8 @@ public static class EntityFinder
         if (!IsMatch(candidate, query, exact))
             return;
 
+        // position 延迟求值：GeometricExtents 相对昂贵，只为真正命中的实体计算
+        var position = positionFactory();
         matches.Add(new FindMatchDto(
             Handle: entity.Handle.ToString(),
             EntityType: entity.GetType().Name,
