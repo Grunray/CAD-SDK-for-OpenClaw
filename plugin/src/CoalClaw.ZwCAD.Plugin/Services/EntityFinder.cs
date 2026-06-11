@@ -121,7 +121,8 @@ public static class EntityFinder
                 break;
         }
 
-        TryAddMatch(matches, entity, "layer", entity.Layer, () => GetEntityPosition(entity, transform), query, exact);
+        // 不把图层名当匹配内容：query 撞上常见图层名（如 "0"）会让整层实体全部命中。
+        // 按图层筛选请用 layer 查询参数。
     }
 
     private static void TryAddMatch(
