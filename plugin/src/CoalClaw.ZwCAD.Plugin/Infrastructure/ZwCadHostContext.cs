@@ -10,15 +10,19 @@ namespace CoalClaw.ZwCAD.Plugin.Infrastructure;
 public sealed class ZwCadHostContext : ICadHostContext
 {
     public const string ApiThreadingVersion = "threadfix-v2";
-    private const int DefaultPort = 54321;
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30);
 
-    public CadHostMetadata Metadata { get; } = new(
-        HostId: "zwcad",
-        Platform: "linux",
-        HostVersion: "ZWCAD Linux 2026",
-        ApiThreadingVersion: ApiThreadingVersion,
-        Port: DefaultPort);
+    public CadHostMetadata Metadata { get; }
+
+    public ZwCadHostContext(int port)
+    {
+        Metadata = new CadHostMetadata(
+            HostId: "zwcad",
+            Platform: "linux",
+            HostVersion: "ZWCAD Linux 2026",
+            ApiThreadingVersion: ApiThreadingVersion,
+            Port: port);
+    }
 
     public bool TryGetDocumentInfo(out string? documentName, out string? error)
     {

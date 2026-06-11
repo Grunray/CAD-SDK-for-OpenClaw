@@ -7,6 +7,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
 resolve_base_url() {
+  # 用户显式设置的 COALCLAW_HTTP_PORT 优先于插件写的 runtime 发现文件
+  if [[ -n "${COALCLAW_HTTP_PORT_SET:-}" ]]; then
+    echo "http://127.0.0.1:${COALCLAW_HTTP_PORT}"
+    return 0
+  fi
+
   local candidates=(
     "${HOME}/.openclaw/kb/shared/wiki/cad-runtime.md"
     "${HOME}/.openclaw/kb/shared/wiki/autocad-runtime.md"

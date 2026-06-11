@@ -12,17 +12,27 @@ namespace CoalClaw.ZwCAD.Plugin;
 public sealed class PluginApplication : IExtensionApplication
 {
     private const int DefaultPort = 54321;
-    private static readonly ZwCadHostContext HostContext = new();
+    internal static int Port { get; private set; } = DefaultPort;
     private HttpServerHost? _httpHost;
 
     public void Initialize()
     {
         ZwCadUiContext.Initialize();
-        _httpHost = new HttpServerHost(HostContext, DefaultPort);
+        Port = ResolvePort();
+        _httpHost = new HttpServerHost(new ZwCadHostContext(Port), Port);
         _httpHost.Start();
-        CadRuntimeWriter.Write("zwcad", "linux", DefaultPort, $"{typeof(PluginApplication).Assembly.GetName().Name}.dll");
+        CadRuntimeWriter.Write("zwcad", "linux", Port, $"{typeof(PluginApplication).Assembly.GetName().Name}.dll");
         Application.DocumentManager.MdiActiveDocument?.Editor.WriteMessage(
-            $"\n[CoalClaw] HTTP API started at http://127.0.0.1:{DefaultPort}\n");
+            $"\n[CoalClaw] HTTP API started at http://127.0.0.1:{Port}\n");
+    }
+
+    // CAD 进程继承启动 shell 的环境，skill 的 config.sh 已 export COALCLAW_HTTP_PORT
+    private static int ResolvePort()
+    {
+        var raw = Environment.GetEnvironmentVariable("COALCLAW_HTTP_PORT");
+        if (int.TryParse(raw, out var port) && port is > 0 and < 65536)
+            return port;
+        return DefaultPort;
     }
 
     public void Terminate()
@@ -38,7 +48,7 @@ public static class PluginCommands
     public static void PingCommand()
     {
         var doc = Application.DocumentManager.MdiActiveDocument;
-        doc?.Editor.WriteMessage("\n[CoalClaw] Plugin loaded. HTTP API: http://127.0.0.1:54321/ping\n");
+        doc?.Editor.WriteMessage($"\n[CoalClaw] Plugin loaded. HTTP API: http://127.0.0.1:{PluginApplication.Port}/ping\n");
     }
 
     [CommandMethod("COALCLAW_STATUS")]
@@ -49,7 +59,7 @@ public static class PluginCommands
             return;
 
         ed.WriteMessage("\n[CoalClaw] 插件已在当前中望 CAD 进程中加载。");
-        ed.WriteMessage("\n  HTTP: http://127.0.0.1:54321/ping");
+        ed.WriteMessage($"\n  HTTP: http://127.0.0.1:{PluginApplication.Port}/ping");
         ed.WriteMessage("\n  更新 DLL 后请重启中望 CAD，不要重复 NETLOAD。\n");
     }
 }
