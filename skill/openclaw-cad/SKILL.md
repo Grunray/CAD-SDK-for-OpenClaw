@@ -57,6 +57,7 @@ bash scripts/zoom_to.sh --handle "A3F"
 | `COALCLAW_PLUGIN_DLL` | 插件 DLL 路径 |
 | `COALCLAW_HTTP_PORT` | 默认 `54321`；显式设置时优先于 runtime 发现文件，并经 CAD 进程环境决定插件监听端口 |
 | `COALCLAW_PING_WAIT_SEC` | 等待插件就绪超时，默认 `90` |
+| `COALCLAW_HTTP_TIMEOUT_SEC` | 单次 HTTP 请求超时，默认 `60` |
 | `COALCLAW_CAD_HOST` | `autocad` 或 `zwcad`（可选） |
 
 ## HTTP API 一览

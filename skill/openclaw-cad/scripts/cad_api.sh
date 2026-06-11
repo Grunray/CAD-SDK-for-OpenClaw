@@ -36,13 +36,16 @@ cad_api() {
   local path="$2"
   local body="${3:-}"
   local url="${COALCLAW_BASE_URL}${path}"
+  # 必须有超时：插件 UI 线程卡住时，无超时的 curl 会挂死整条 agent 链
+  # max-time 需大于服务端 UI 上下文 30s 超时，留出余量
+  local curl_opts=(-sfS --connect-timeout 5 --max-time "${COALCLAW_HTTP_TIMEOUT_SEC:-60}")
 
   if [[ "$method" == "GET" ]]; then
-    curl -sfS "$url"
+    curl "${curl_opts[@]}" "$url"
   elif [[ -n "$body" ]]; then
-    curl -sfS -X "$method" -H "Content-Type: application/json" -d "$body" "$url"
+    curl "${curl_opts[@]}" -X "$method" -H "Content-Type: application/json" -d "$body" "$url"
   else
-    curl -sfS -X "$method" "$url"
+    curl "${curl_opts[@]}" -X "$method" "$url"
   fi
 }
 
