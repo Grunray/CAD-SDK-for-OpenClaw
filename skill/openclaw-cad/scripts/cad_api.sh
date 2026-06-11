@@ -50,6 +50,14 @@ cad_api() {
   fi
 }
 
+# JSON 字符串值转义：Linux 文件名合法包含 \" 与 \\，手拼 body 前必须过这里
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  printf '%s' "$s"
+}
+
 # GET + query 参数。每个参数为 "name=value"，value 由 curl --data-urlencode 编码：
 # 数据走 argv 而非内插进解释器源码，外部输入（LLM 生成的 query 等）没有注入面
 cad_api_get() {

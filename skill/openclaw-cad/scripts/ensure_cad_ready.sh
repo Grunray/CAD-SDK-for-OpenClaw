@@ -24,7 +24,7 @@ source "$SCRIPT_DIR/cad_api.sh"
 if cad_api GET "/ping" >/dev/null 2>&1; then
   if [[ -n "$DWG_PATH" ]]; then
     full="$(realpath "$DWG_PATH")"
-    cad_api POST "/document/open" "{\"path\":\"$full\"}"
+    cad_api POST "/document/open" "{\"path\":\"$(json_escape "$full")\"}"
   else
     cad_api GET "/ping"
   fi
@@ -42,5 +42,5 @@ fi
 
 if [[ -n "$DWG_PATH" ]]; then
   full="$(realpath "$DWG_PATH")"
-  cad_api POST "/document/open" "{\"path\":\"$full\"}"
+  cad_api POST "/document/open" "{\"path\":\"$(json_escape "$full")\"}"
 fi

@@ -12,4 +12,4 @@ full="$(realpath "$PATH_ARG")"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/cad_api.sh"
-cad_api POST "/document/open" "{\"path\":\"$full\"}"
+cad_api POST "/document/open" "{\"path\":\"$(json_escape "$full")\"}"
