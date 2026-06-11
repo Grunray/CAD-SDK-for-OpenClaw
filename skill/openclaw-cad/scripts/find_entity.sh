@@ -25,9 +25,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/cad_api.sh"
 
-path="/find?q=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$QUERY'''))")"
-[[ "$EXACT" == true ]] && path="${path}&exact=true"
-[[ -n "$LAYER" ]] && path="${path}&layer=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$LAYER'''))")"
-[[ -n "$LIMIT" ]] && path="${path}&limit=$LIMIT"
+params=("q=$QUERY")
+[[ "$EXACT" == true ]] && params+=("exact=true")
+[[ -n "$LAYER" ]] && params+=("layer=$LAYER")
+[[ -n "$LIMIT" ]] && params+=("limit=$LIMIT")
 
-cad_api GET "$path"
+cad_api_get "/find" "${params[@]}"

@@ -31,22 +31,36 @@ resolve_base_url() {
 
 COALCLAW_BASE_URL="$(resolve_base_url)"
 
+# 必须有超时：插件 UI 线程卡住时，无超时的 curl 会挂死整条 agent 链
+# max-time 需大于服务端 UI 上下文 30s 超时，留出余量
+COALCLAW_CURL_OPTS=(-sfS --connect-timeout 5 --max-time "${COALCLAW_HTTP_TIMEOUT_SEC:-60}")
+
 cad_api() {
   local method="$1"
   local path="$2"
   local body="${3:-}"
   local url="${COALCLAW_BASE_URL}${path}"
-  # 必须有超时：插件 UI 线程卡住时，无超时的 curl 会挂死整条 agent 链
-  # max-time 需大于服务端 UI 上下文 30s 超时，留出余量
-  local curl_opts=(-sfS --connect-timeout 5 --max-time "${COALCLAW_HTTP_TIMEOUT_SEC:-60}")
 
   if [[ "$method" == "GET" ]]; then
-    curl "${curl_opts[@]}" "$url"
+    curl "${COALCLAW_CURL_OPTS[@]}" "$url"
   elif [[ -n "$body" ]]; then
-    curl "${curl_opts[@]}" -X "$method" -H "Content-Type: application/json" -d "$body" "$url"
+    curl "${COALCLAW_CURL_OPTS[@]}" -X "$method" -H "Content-Type: application/json" -d "$body" "$url"
   else
-    curl "${curl_opts[@]}" -X "$method" "$url"
+    curl "${COALCLAW_CURL_OPTS[@]}" -X "$method" "$url"
   fi
+}
+
+# GET + query 参数。每个参数为 "name=value"，value 由 curl --data-urlencode 编码：
+# 数据走 argv 而非内插进解释器源码，外部输入（LLM 生成的 query 等）没有注入面
+cad_api_get() {
+  local path="$1"
+  shift
+  local args=()
+  local kv
+  for kv in "$@"; do
+    args+=(--data-urlencode "$kv")
+  done
+  curl "${COALCLAW_CURL_OPTS[@]}" --get "${args[@]}" "${COALCLAW_BASE_URL}${path}"
 }
 
 export COALCLAW_BASE_URL

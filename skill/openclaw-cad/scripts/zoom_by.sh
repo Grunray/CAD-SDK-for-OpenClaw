@@ -15,7 +15,8 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/cad_api.sh"
-path="/zoom/by?factor=$FACTOR"
-[[ -n "$CENTER_X" ]] && path="${path}&centerx=$CENTER_X"
-[[ -n "$CENTER_Y" ]] && path="${path}&centery=$CENTER_Y"
-cad_api POST "$path"
+# 服务端 /zoom/by 同时接受 GET/POST；统一走编码安全的 GET helper
+params=("factor=$FACTOR")
+[[ -n "$CENTER_X" ]] && params+=("centerx=$CENTER_X")
+[[ -n "$CENTER_Y" ]] && params+=("centery=$CENTER_Y")
+cad_api_get "/zoom/by" "${params[@]}"
