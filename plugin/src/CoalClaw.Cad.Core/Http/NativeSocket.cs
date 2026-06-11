@@ -15,6 +15,9 @@ internal static class NativeSocket
     private const int SockStream = 1;
     private const int SolSocket = 1;
     private const int SoReuseAddr = 2;
+    private const int SoRcvTimeoLinux = 20;
+    private const int SolSocketWin = 0xFFFF;
+    private const int SoRcvTimeoWin = 0x1006;
     private const int ListenBacklog = 8;
     private const int InvalidSocket = -1;
 
@@ -68,22 +71,26 @@ internal static class NativeSocket
             Platform.close(fd);
     }
 
-    public static int ReadAvailable(int fd, byte[] buffer, int offset, int count, int timeoutMs)
+    /// <summary>单次 recv；返回 0=对端关闭，&lt;0=错误或超时（需先 SetRecvTimeout）。</summary>
+    public static int Recv(int fd, byte[] buffer, int count) => Platform.Recv(fd, buffer, 0, count, 0);
+
+    /// <summary>SO_RCVTIMEO：让阻塞 recv 在 timeoutMs 后返回 -1，避免慢速/异常客户端永久占住处理线程。</summary>
+    public static void SetRecvTimeout(int fd, int timeoutMs)
     {
-        var deadline = Environment.TickCount + timeoutMs;
-        var total = 0;
-        while (total < count && Environment.TickCount < deadline)
+        if (OperatingSystem.IsWindows())
         {
-            var n = Platform.Recv(fd, buffer, offset + total, count - total, 0);
-            if (n > 0)
-            {
-                total += n;
-                continue;
-            }
-            if (n == 0) break;
-            Thread.Sleep(10);
+            // Windows 取 DWORD 毫秒；SOL_SOCKET=0xFFFF 与 Linux 取值不同
+            var ms = timeoutMs;
+            Win.setsockopt(fd, SolSocketWin, SoRcvTimeoWin, ref ms, Marshal.SizeOf<int>());
         }
-        return total;
+        else
+        {
+            // Linux 取 struct timeval { long tv_sec; long tv_usec; }（x86_64 下 16 字节）
+            var tv = new byte[16];
+            BitConverter.GetBytes((long)(timeoutMs / 1000)).CopyTo(tv, 0);
+            BitConverter.GetBytes((long)(timeoutMs % 1000 * 1000)).CopyTo(tv, 8);
+            Lin.setsockopt_timeval(fd, SolSocket, SoRcvTimeoLinux, tv, tv.Length);
+        }
     }
 
     public static void SendAll(int fd, byte[] data)
@@ -210,6 +217,7 @@ internal static class NativeSocket
         [DllImport(Libc, SetLastError = true)] public static extern int listen(int s, int backlog);
         [DllImport(Libc, SetLastError = true)] public static extern int accept(int s, IntPtr addr, IntPtr addrlen);
         [DllImport(Libc, SetLastError = true)] public static extern int setsockopt(int s, int level, int optname, ref int optval, int optlen);
+        [DllImport(Libc, EntryPoint = "setsockopt", SetLastError = true)] public static extern int setsockopt_timeval(int s, int level, int optname, byte[] optval, int optlen);
         [DllImport(Libc, SetLastError = true)] public static extern int recv(int s, byte[] buf, int len, int flags);
         [DllImport(Libc, SetLastError = true)] public static extern int send(int s, byte[] buf, int len, int flags);
         [DllImport(Libc, SetLastError = true)] public static extern int close(int s);
