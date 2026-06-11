@@ -11,4 +11,4 @@ description: 已迁移至 openclaw-cad。请使用 skill/openclaw-cad/SKILL.md�
 
 > **`skill/openclaw-cad/SKILL.md`**
 
-脚本路径：`skill/openclaw-cad/scripts/`
+脚本路径：`skill/openclaw-cad/scripts/`（Windows 脚本在 `scripts/platforms/windows-autocad/`）
