@@ -29,6 +29,9 @@ to_scr_path() {
 }
 
 PLUGIN_PATH="$(to_scr_path "$COALCLAW_PLUGIN_DLL")"
+# 清理上一代遗留（仅 1 小时前的，避免误删正在被某个 CAD 进程读取的脚本）。
+# 本次的 .scr 不能在启动后立即删——CAD 是异步拉起、稍后才读它。
+find /tmp -maxdepth 1 -name 'coalclaw-zwcad-*.scr' -mmin +60 -delete 2>/dev/null || true
 SCR="$(mktemp /tmp/coalclaw-zwcad-XXXXXX.scr)"
 {
   echo "(command \"._NETLOAD\" \"$PLUGIN_PATH\")"
