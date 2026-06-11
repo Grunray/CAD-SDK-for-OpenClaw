@@ -82,7 +82,8 @@ public sealed class HttpServerHost : IDisposable
             var totalRead = NativeSocket.ReadAvailable(clientFd, buffer, 0, buffer.Length, 5000);
             if (totalRead == 0) return;
 
-            var requestText = Encoding.ASCII.GetString(buffer, 0, totalRead);
+            // UTF-8 而非 ASCII：POST body 可能含非 ASCII 路径（如中文）；UTF-8 兼容 ASCII 请求行与 header
+            var requestText = Encoding.UTF8.GetString(buffer, 0, totalRead);
             var request = ParseRequest(requestText);
             if (request == null) return;
 
