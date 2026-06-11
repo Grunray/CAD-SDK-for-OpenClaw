@@ -7,6 +7,8 @@ namespace CoalClaw.Cad.Core.Api;
 
 public sealed class ApiRouter
 {
+    private const int DefaultFindLimit = 100;
+
     private readonly ICadHostContext _host;
 
     public ApiRouter(ICadHostContext host)
@@ -32,7 +34,10 @@ public sealed class ApiRouter
                 var q = query.GetValueOrDefault("q") ?? query.GetValueOrDefault("query") ?? "";
                 var exact = query.GetValueOrDefault("exact")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
                 var layer = query.GetValueOrDefault("layer");
-                return FindEntity(q, exact, layer);
+                var limit = DefaultFindLimit;
+                if (int.TryParse(query.GetValueOrDefault("limit"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var lim) && lim >= 0)
+                    limit = lim;
+                return FindEntity(q, exact, layer, limit);
             }
 
             if (path.StartsWith("/zoom/to", StringComparison.Ordinal) && method == "GET")
@@ -110,7 +115,7 @@ public sealed class ApiRouter
         }
     }
 
-    private (int Status, string Body) FindEntity(string query, bool exact, string? layer)
+    private (int Status, string Body) FindEntity(string query, bool exact, string? layer, int limit)
     {
         if (string.IsNullOrWhiteSpace(query))
             return (400, SimpleJson.Err("Query parameter 'q' is required."));
@@ -118,7 +123,12 @@ public sealed class ApiRouter
         try
         {
             var matches = _host.FindEntities(query, exact, layer);
-            return (200, SimpleJson.Find(matches));
+
+            // limit=0 表示不限制；截断在路由层做，宿主接口保持不变
+            if (limit > 0 && matches.Count > limit)
+                return (200, SimpleJson.Find(matches.Take(limit).ToList(), matches.Count, truncated: true));
+
+            return (200, SimpleJson.Find(matches, matches.Count, truncated: false));
         }
         catch (InvalidOperationException ex)
         {

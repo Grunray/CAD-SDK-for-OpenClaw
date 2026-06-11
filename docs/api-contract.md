@@ -74,6 +74,7 @@ Linux 中望示例：`host: "zwcad"`, `platform: "linux"`, `hostVersion: "ZWCAD 
 | `q` 或 `query` | 是 | 搜索关键字 |
 | `exact` | 否 | `true` 精确匹配 |
 | `layer` | 否 | 图层过滤 |
+| `limit` | 否 | 结果数上限，默认 `100`；`0` 表示不限 |
 
 **200**
 
@@ -89,9 +90,13 @@ Linux 中望示例：`host: "zwcad"`, `platform: "linux"`, `hostVersion: "ZWCAD 
       "position": { "x": 100.0, "y": 200.0, "z": 0.0 }
     }
   ],
-  "count": 1
+  "count": 1,
+  "total": 1,
+  "truncated": false
 }
 ```
+
+`count` = 本次返回条数；`total` = 命中总数；`truncated` = 是否被 `limit` 截断。
 
 ## GET /zoom/to?handle=
 

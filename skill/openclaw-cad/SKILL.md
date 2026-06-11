@@ -66,7 +66,7 @@ bash scripts/zoom_to.sh --handle "A3F"
 | GET | `/ping` | 插件状态（含 `host`、`platform`、`apiVersion`） |
 | GET | `/health` | 活动文档检查 |
 | POST | `/document/open` | 打开 DWG（JSON `{"path":"..."}`） |
-| GET | `/find?q=&exact=&layer=` | 按名称定位 |
+| GET | `/find?q=&exact=&layer=&limit=` | 按名称定位（limit 默认 100，0=不限） |
 | GET | `/zoom/to?handle=` | 缩放到图元 |
 | POST | `/zoom/by?factor=` | 按倍率缩放 |
 | GET | `/zoom/extents` | 全图 |
