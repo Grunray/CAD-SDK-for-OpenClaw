@@ -117,6 +117,12 @@ Linux 中望示例：`host: "zwcad"`, `platform: "linux"`, `hostVersion: "ZWCAD 
 
 **404** — handle 不存在
 
+### zoom 端点共同语义（重要）
+
+- 缩放通过 CAD 命令队列**异步**执行：HTTP 200 表示命令已成功排队，**不保证**返回时缩放已完成；
+- `view` 是按目标范围计算的**期望视图**（含 padding），不是从 CAD 实际回读的视图；`/zoom/by` 无目标范围，`view` 为 `null`；
+- 连续 zoom 调用按命令队列顺序串行消化；调用后立即截屏可能仍是旧画面，需要确定性时序时请稍候或回读 `/health`。
+
 ## POST /zoom/by?factor=
 
 参数：`factor`（必填）、`centerx`、`centery`（可选）
