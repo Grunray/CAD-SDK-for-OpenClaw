@@ -74,15 +74,19 @@ public sealed class HttpServerHost : IDisposable
         }
     }
 
+    private const int MaxRequestBytes = 1024 * 1024;
+    private const int RecvTimeoutMs = 5000;
+
     private void HandleClient(int clientFd)
     {
         try
         {
-            var buffer = new byte[8192];
-            var totalRead = NativeSocket.ReadAvailable(clientFd, buffer, 0, buffer.Length, 5000);
-            if (totalRead == 0) return;
+            NativeSocket.SetRecvTimeout(clientFd, RecvTimeoutMs);
+            var requestBytes = ReadRequest(clientFd);
+            if (requestBytes.Length == 0) return;
 
-            var requestText = Encoding.ASCII.GetString(buffer, 0, totalRead);
+            // UTF-8 而非 ASCII：POST body 可能含非 ASCII 路径（如中文）；UTF-8 兼容 ASCII 请求行与 header
+            var requestText = Encoding.UTF8.GetString(requestBytes);
             var request = ParseRequest(requestText);
             if (request == null) return;
 
@@ -119,6 +123,65 @@ public sealed class HttpServerHost : IDisposable
         {
             NativeSocket.Close(clientFd);
         }
+    }
+
+    /// <summary>
+    /// 协议驱动读取：增量 recv，定位 header 结束符后按 Content-Length 读满即停。
+    /// 旧实现按「填满缓冲区」循环——完整请求到达后仍会再次阻塞在 recv 上，且 >8KB 请求被截断。
+    /// </summary>
+    private static byte[] ReadRequest(int clientFd)
+    {
+        var chunk = new byte[8192];
+        using var data = new MemoryStream();
+        var headerEnd = -1;
+        var contentLength = 0;
+
+        while (data.Length < MaxRequestBytes)
+        {
+            var n = NativeSocket.Recv(clientFd, chunk, chunk.Length);
+            if (n <= 0) break; // 对端关闭或 recv 超时；已读部分尽力解析
+
+            data.Write(chunk, 0, n);
+
+            if (headerEnd < 0)
+            {
+                headerEnd = FindHeaderEnd(data);
+                if (headerEnd >= 0)
+                    contentLength = ParseContentLength(data, headerEnd);
+            }
+
+            if (headerEnd >= 0 && data.Length >= headerEnd + 4 + (long)contentLength)
+                break;
+        }
+
+        return data.ToArray();
+    }
+
+    private static int FindHeaderEnd(MemoryStream data)
+    {
+        var buf = data.GetBuffer();
+        var len = (int)data.Length;
+        for (var i = 3; i < len; i++)
+        {
+            if (buf[i - 3] == (byte)'\r' && buf[i - 2] == (byte)'\n' &&
+                buf[i - 1] == (byte)'\r' && buf[i] == (byte)'\n')
+                return i - 3;
+        }
+        return -1;
+    }
+
+    private static int ParseContentLength(MemoryStream data, int headerEnd)
+    {
+        var headerText = Encoding.ASCII.GetString(data.GetBuffer(), 0, headerEnd);
+        foreach (var line in headerText.Split("\r\n"))
+        {
+            var sep = line.IndexOf(':');
+            if (sep <= 0) continue;
+            if (!line[..sep].Trim().Equals("Content-Length", StringComparison.OrdinalIgnoreCase)) continue;
+            if (int.TryParse(line[(sep + 1)..].Trim(), out var value) && value >= 0)
+                return Math.Min(value, MaxRequestBytes);
+        }
+        return 0;
     }
 
     private sealed class HttpRequestInfo

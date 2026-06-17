@@ -11,4 +11,4 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/cad_api.sh"
-cad_api GET "/zoom/to?handle=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$HANDLE'''))")"
+cad_api_get "/zoom/to" "handle=$HANDLE"

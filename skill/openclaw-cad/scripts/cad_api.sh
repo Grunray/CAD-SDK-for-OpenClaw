@@ -7,6 +7,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
 resolve_base_url() {
+  # 用户显式设置的 COALCLAW_HTTP_PORT 优先于插件写的 runtime 发现文件
+  if [[ -n "${COALCLAW_HTTP_PORT_SET:-}" ]]; then
+    echo "http://127.0.0.1:${COALCLAW_HTTP_PORT}"
+    return 0
+  fi
+
   local candidates=(
     "${HOME}/.openclaw/kb/shared/wiki/cad-runtime.md"
     "${HOME}/.openclaw/kb/shared/wiki/autocad-runtime.md"
@@ -25,6 +31,10 @@ resolve_base_url() {
 
 COALCLAW_BASE_URL="$(resolve_base_url)"
 
+# 必须有超时：插件 UI 线程卡住时，无超时的 curl 会挂死整条 agent 链
+# max-time 需大于服务端 UI 上下文 30s 超时，留出余量
+COALCLAW_CURL_OPTS=(-sfS --connect-timeout 5 --max-time "${COALCLAW_HTTP_TIMEOUT_SEC:-60}")
+
 cad_api() {
   local method="$1"
   local path="$2"
@@ -32,12 +42,33 @@ cad_api() {
   local url="${COALCLAW_BASE_URL}${path}"
 
   if [[ "$method" == "GET" ]]; then
-    curl -sfS "$url"
+    curl "${COALCLAW_CURL_OPTS[@]}" "$url"
   elif [[ -n "$body" ]]; then
-    curl -sfS -X "$method" -H "Content-Type: application/json" -d "$body" "$url"
+    curl "${COALCLAW_CURL_OPTS[@]}" -X "$method" -H "Content-Type: application/json" -d "$body" "$url"
   else
-    curl -sfS -X "$method" "$url"
+    curl "${COALCLAW_CURL_OPTS[@]}" -X "$method" "$url"
   fi
+}
+
+# JSON 字符串值转义：Linux 文件名合法包含 \" 与 \\，手拼 body 前必须过这里
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  printf '%s' "$s"
+}
+
+# GET + query 参数。每个参数为 "name=value"，value 由 curl --data-urlencode 编码：
+# 数据走 argv 而非内插进解释器源码，外部输入（LLM 生成的 query 等）没有注入面
+cad_api_get() {
+  local path="$1"
+  shift
+  local args=()
+  local kv
+  for kv in "$@"; do
+    args+=(--data-urlencode "$kv")
+  done
+  curl "${COALCLAW_CURL_OPTS[@]}" --get "${args[@]}" "${COALCLAW_BASE_URL}${path}"
 }
 
 export COALCLAW_BASE_URL

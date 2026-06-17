@@ -113,7 +113,7 @@ internal static class SimpleJson
     public static string OpenOk(string docName) =>
         $"{{\"ok\":true,\"documentName\":{Str(docName)}}}";
 
-    public static string Find(IReadOnlyList<FindMatchDto> matches)
+    public static string Find(IReadOnlyList<FindMatchDto> matches, int total, bool truncated)
     {
         var sb = new StringBuilder();
         sb.Append("{\"matches\":[");
@@ -130,7 +130,11 @@ internal static class SimpleJson
             sb.Append($"\"position\":{{\"x\":{Num(m.Position.X)},\"y\":{Num(m.Position.Y)},\"z\":{Num(m.Position.Z)}}}");
             sb.Append('}');
         }
-        sb.Append("],\"count\":").Append(matches.Count).Append('}');
+        // count = 本次返回条数（向后兼容）；total = 命中总数
+        sb.Append("],\"count\":").Append(matches.Count)
+          .Append(",\"total\":").Append(total)
+          .Append(",\"truncated\":").Append(Bool(truncated))
+          .Append('}');
         return sb.ToString();
     }
 

@@ -40,6 +40,9 @@ public static class ViewZoomService
 
     public static void SendZoomCommand(Document doc, string command)
     {
+        // SendStringToExecute 是异步排队执行——ZwCAD Linux 2026 上验证过的缩放路径；
+        // SetCurrentView 等 API 直调需真机回归后再评估。HTTP 200 仅代表命令已排队，
+        // 响应中的 view 是按目标范围计算的期望值（docs/api-contract.md「zoom 端点共同语义」）。
         doc.SendStringToExecute(command, true, false, false);
     }
 

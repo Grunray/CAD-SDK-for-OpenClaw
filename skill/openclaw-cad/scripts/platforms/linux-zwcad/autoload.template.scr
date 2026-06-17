@@ -1,8 +1,10 @@
-#!/usr/bin/env bash
-# 中望 CAD Linux 插件自动加载配置模板说明
-# 详见 docs/setup-linux-zwcad.md
-#
-# 将 NETLOAD 行加入中望启动脚本或按官方 PDF 配置自动加载：
-# (command "._NETLOAD" "/path/to/CoalClawZwCADPlugin.dll")
+;; CoalClaw 中望 CAD Linux 自动加载脚本模板
+;;
+;; 用法：把 {{PLUGIN_DLL}} 替换为编译产物 CoalClawZwCADPlugin.dll 的绝对路径，
+;; 例如 /home/user/.../bin/Debug/net8.0/CoalClawZwCADPlugin.dll
+;; 然后按中望官方《ZWCAD_Linux_二次开发程序自动加载方式.pdf》将本脚本接入启动配置。
+;; 详见 docs/setup-linux-zwcad.md「方式 B — 自动加载（生产）」。
+;;
+;; 路径用正斜杠 /，不要用反斜杠。
 
-echo "See docs/setup-linux-zwcad.md for autoload configuration." >&2
+(command "._NETLOAD" "{{PLUGIN_DLL}}")
